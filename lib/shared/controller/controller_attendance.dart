@@ -23,17 +23,18 @@ class ControllerAttendance extends GetxController {
   final name = TextEditingController();
 
   @override
-  void dispose() {
-    super.dispose();
-    name.dispose();
-  }
-
-  @override
   onInit() async {
     super.onInit();
     DatabaseSqflite().openDB();
     locations();
     getPermission();
+  }
+
+  @override
+  void dispose() {
+    name.dispose();
+    Get.delete();
+    super.dispose();
   }
 
   insertLocation({required Attendance location}) async {
@@ -44,6 +45,8 @@ class ControllerAttendance extends GetxController {
         'locations',
         location.toMap(),
       );
+      update();
+      locations();
       loading(false);
     } catch (e) {
       log(e.toString());

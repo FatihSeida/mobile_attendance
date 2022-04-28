@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mobile_attendance/shared/controller/controller_attendance.dart';
+import 'dart:io';
 
 import '../routes/app_routes.dart';
 
@@ -9,25 +10,40 @@ class PageHome extends GetView<ControllerAttendance> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mobile Attendance'),
-      ),
-      body: Obx(() => RefreshIndicator(
-            onRefresh: (() => controller.locations()),
-            child: controller.loading.value
-                ? const Center(
-                    child: CircularProgressIndicator(),
-                  )
-                : controller.locationAttendance.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'Empty',
-                          style: TextStyle(fontSize: 40),
-                        ),
-                      )
-                    : ListView.builder(
-                        itemBuilder: (context, index) => Card(
+    return GetBuilder<ControllerAttendance>(
+      didChangeDependencies: (state) => controller.locations(),
+      builder: (controller) => RefreshIndicator(
+        onRefresh: (() => controller.locations()),
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text('Mobile Attendance'),
+          ),
+          body: controller.loading.value
+              ? const Center(
+                  child: CircularProgressIndicator(),
+                )
+              : controller.locationAttendance.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'Empty',
+                        style: TextStyle(fontSize: 40),
+                      ),
+                    )
+                  : ListView.builder(
+                      physics: const BouncingScrollPhysics(
+                        parent: AlwaysScrollableScrollPhysics(),
+                      ),
+                      shrinkWrap: false,
+                      itemBuilder: (context, index) => Dismissible(
+                        background: Container(color: Colors.red),
+                        direction: DismissDirection.endToStart,
+                        key: Key(
+                            '${controller.locationAttendance[index].name}${controller.locationAttendance[index].longitudeLocation}'),
+                        onDismissed: (direction) {
+                          controller.deleteLocation(
+                              controller.locationAttendance[index].name);
+                        },
+                        child: Card(
                           margin: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 4),
                           child: Padding(
@@ -60,34 +76,33 @@ class PageHome extends GetView<ControllerAttendance> {
                                   mainAxisAlignment: MainAxisAlignment.end,
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
-                                    TextButton(
-                                        onPressed: () {
-                                          controller.deleteLocation(controller
-                                              .locationAttendance[index].name);
-                                        },
-                                        child: controller.distance[index] < 50
-                                            ? const Text(
-                                                'Accepted',
-                                                style: TextStyle(
-                                                    color: Colors.green),
-                                              )
-                                            : const Text('Rejected',
-                                                style: TextStyle(
-                                                    color: Colors.red)))
+                                    controller.distance[index] < 50
+                                        ? const Text(
+                                            'Accepted',
+                                            style:
+                                                TextStyle(color: Colors.green),
+                                          )
+                                        : const Text('Rejected',
+                                            style:
+                                                TextStyle(color: Colors.red)),
+                                    Text(
+                                        '${controller.distance[index].round().toString()}m Distance')
                                   ],
                                 ),
                               ],
                             ),
                           ),
                         ),
-                        itemCount: controller.locationAttendance.length,
                       ),
-          )),
-      floatingActionButton: FloatingActionButton(
-          child: const Icon(Icons.add),
-          onPressed: () {
-            Get.toNamed(Routes.INPUT_ATTENDANCE);
-          }),
+                      itemCount: controller.locationAttendance.length,
+                    ),
+          floatingActionButton: FloatingActionButton(
+              child: const Icon(Icons.add),
+              onPressed: () {
+                Get.toNamed(Routes.INPUT_ATTENDANCE);
+              }),
+        ),
+      ),
     );
   }
 }
