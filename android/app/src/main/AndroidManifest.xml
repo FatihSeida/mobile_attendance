@@ -9,6 +9,8 @@
         android:label="mobile_attendance"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <meta-data android:name="com.google.android.geo.API_KEY"
+               android:value="AIzaSyCgJKraTIibCHOdE7pYA9aJwNV7JjFifGc"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"

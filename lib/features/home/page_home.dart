@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:mobile_attendance/shared/controller/controller_attendance.dart';
-import 'dart:io';
+import 'package:mobile_attendance/features/user_attendance/controller_user_attendance.dart';
 
-import '../routes/app_routes.dart';
+import '../../routes/app_routes.dart';
 
 class PageHome extends GetView<ControllerAttendance> {
   const PageHome({Key? key}) : super(key: key);
@@ -17,6 +16,17 @@ class PageHome extends GetView<ControllerAttendance> {
         child: Scaffold(
           appBar: AppBar(
             title: const Text('Mobile Attendance'),
+            actions: [
+              TextButton(
+                  onPressed: () {
+                    controller.getAttendancelocations();
+                    Get.toNamed(Routes.INPUT_LOCATION);
+                  },
+                  child: const Text(
+                    'INSERT LOCATION',
+                    style: TextStyle(color: Colors.white),
+                  ))
+            ],
           ),
           body: controller.loading.value
               ? const Center(
@@ -99,6 +109,7 @@ class PageHome extends GetView<ControllerAttendance> {
           floatingActionButton: FloatingActionButton(
               child: const Icon(Icons.add),
               onPressed: () {
+                controller.getAttendancelocations();
                 Get.toNamed(Routes.INPUT_ATTENDANCE);
               }),
         ),

@@ -1,7 +1,8 @@
 import 'package:get/get.dart';
 
-import '../pages/page_home.dart';
-import '../pages/page_input_attendance.dart';
+import '../features/home/page_home.dart';
+import '../features/user_attendance/page_input_user_attendance.dart';
+import '../features/attendance_location/page_input_location.dart';
 import 'app_routes.dart';
 
 class AppPages {
@@ -12,7 +13,11 @@ class AppPages {
     ),
     GetPage(
       name: Routes.INPUT_ATTENDANCE,
-      page: () => const PageInputAttendance(),
+      page: () => const PageInputUserAttendance(),
+    ),
+    GetPage(
+      name: Routes.INPUT_LOCATION,
+      page: () => const PageInputLocation(),
     ),
   ];
 }
