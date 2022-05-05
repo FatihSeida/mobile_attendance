@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_material_pickers/flutter_material_pickers.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+
 import 'package:get/get.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:mobile_attendance/features/user_attendance/model_attendance.dart';
+import 'package:mobile_attendance/features/user_attendance/model_user_attendance.dart';
 import 'package:mobile_attendance/features/user_attendance/controller_user_attendance.dart';
+import 'package:mobile_attendance/shared/constants/colors.dart';
+import 'package:mobile_attendance/shared/constants/styles.dart';
+import 'package:mobile_attendance/shared/widgets/circular_progress_indicator.dart';
 
-import '../attendance_location/model_location.dart';
-
-class PageInputUserAttendance extends GetView<ControllerAttendance> {
+class PageInputUserAttendance extends GetView<ControllerUserAttendance> {
   const PageInputUserAttendance({Key? key}) : super(key: key);
 
   @override
@@ -18,113 +18,174 @@ class PageInputUserAttendance extends GetView<ControllerAttendance> {
           title: const Text('Add Attendance'),
         ),
         body: Obx(
-          () => Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: TextFormField(
-                  controller: controller.name,
-                  enableInteractiveSelection: true,
-                  cursorColor: Theme.of(context).primaryColor,
-                  textCapitalization: TextCapitalization.sentences,
+          () => Padding(
+            padding: EdgeInsets.only(
+                top: Insets.xl, left: Insets.xl, right: Insets.xl),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: Insets.med),
+                  decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(5),
+                      border: Border.all(color: AppColor.primary)),
+                  child: TextField(
+                    decoration: InputDecoration(
+                        border: InputBorder.none,
+                        labelText: "Your Name",
+                        labelStyle: TextStyles.textXs
+                            .copyWith(fontSize: 12, color: Colors.blue)),
+                    controller: controller.name,
+                  ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
+                verticalSpace(Sizes.sm),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: Insets.med),
+                  decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(5),
+                      border: Border.all(color: AppColor.primary)),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Select Your Attendance Location',
+                            textAlign: TextAlign.left,
+                            style: TextStyles.textXs
+                                .copyWith(fontSize: 10, color: Colors.blue),
+                          ),
+                          Text(
+                            controller.selectedLocation.value,
+                            textAlign: TextAlign.left,
+                          ),
+                        ],
+                      ),
+                      SizedBox(
+                        child: ElevatedButton(
+                            child: const Text('Pick Location'),
+                            onPressed: () => chooseLocationDialog()),
+                      ),
+                    ],
+                  ),
+                ),
+                verticalSpace(Sizes.xs),
+                Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Flexible(
-                      child: Text(controller.currentLocationLatitude.isNaN
-                          ? ''
-                          : '${controller.currentLocationLatitude} ${controller.currentLocationLongitude}'),
-                    ),
                     ElevatedButton(
                         onPressed: () {
                           controller.getCurrentPosition();
                         },
-                        child: const Text('Fill Your Location')),
+                        style: ElevatedButton.styleFrom(
+                            primary:
+                                controller.currentLocationLatitude.value == 0.00
+                                    ? Colors.blue
+                                    : AppColor.successColor),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.my_location),
+                            horizontalSpace(Sizes.xs),
+                            const Text('Get Your Location')
+                          ],
+                        )),
+                    ElevatedButton(
+                        onPressed: controller.name.text.isEmpty ||
+                                controller.currentLocationLatitude.value == 0.00
+                            ? () {}
+                            : () async {
+                                await controller.insertLocation(
+                                    location: UserAttendance(
+                                  name: controller.name.text,
+                                  longitude:
+                                      controller.currentLocationLongitude.value,
+                                  latitude:
+                                      controller.currentLocationLatitude.value,
+                                  latitudeLocation: controller
+                                      .allMarkers[controller
+                                          .selectedIndexLocation.value]
+                                      .position
+                                      .latitude,
+                                  longitudeLocation: controller
+                                      .allMarkers[controller
+                                          .selectedIndexLocation.value]
+                                      .position
+                                      .longitude,
+                                  nameLocation: controller
+                                      .allMarkers[controller
+                                          .selectedIndexLocation.value]
+                                      .infoWindow
+                                      .title!,
+                                ));
+                                if (controller.loading.value == false) {
+                                  controller.clearForm();
+                                  Get.back();
+                                }
+                              },
+                        child: controller.loading.value
+                            ? const DefaultProgressIndicator()
+                            : const Text('Submit'))
                   ],
                 ),
-              ),
-              Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                  child: Row(
-                    children: <Widget>[
-                      SizedBox(
-                        child: ElevatedButton(
-                            child: const Text('Choose your location'),
-                            onPressed: () => Get.defaultDialog(
-                                title: 'Select your location',
-                                content: SizedBox(
-                                  height: Get.height * 0.2,
-                                  width: Get.width * 0.3,
-                                  child: ListView.builder(
-                                    itemBuilder: (context, i) {
-                                      return InkWell(
-                                        onTap: () {
-                                          controller.selectedLocation.value =
-                                              controller.allMarkers[i]
-                                                  .infoWindow.title!;
-                                          controller
-                                              .selectedIndexLocation.value = i;
-                                          Get.back();
-                                        },
-                                        child: ListTile(
-                                          title: Text(controller
-                                              .allMarkers[i].infoWindow.title!),
-                                        ),
-                                      );
-                                    },
-                                    shrinkWrap: true,
-                                    itemCount: controller.allMarkers.length,
-                                  ),
-                                ))),
-                      ),
-                      Expanded(
-                        child: Text(
-                          controller.selectedLocation.value,
-                          textAlign: TextAlign.left,
-                        ),
-                      ),
-                    ],
-                  )),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                child: ElevatedButton(
-                    onPressed: () async {
-                      await controller.insertLocation(
-                          location: Attendance(
-                        name: controller.name.text,
-                        longitude: controller.currentLocationLongitude.value,
-                        latitude: controller.currentLocationLatitude.value,
-                        // id: 1,
-                        latitudeLocation: controller
-                            .allMarkers[controller.selectedIndexLocation.value]
-                            .position
-                            .latitude,
-                        longitudeLocation: controller
-                            .allMarkers[controller.selectedIndexLocation.value]
-                            .position
-                            .longitude,
-                        nameLocation: controller
-                            .allMarkers[controller.selectedIndexLocation.value]
-                            .infoWindow
-                            .title!,
-                      ));
-                      if (!controller.loading.value) {
-                        Get.back();
-                      }
-                    },
-                    child: controller.loading.value
-                        ? const Center(
-                            child: CircularProgressIndicator(),
-                          )
-                        : const Text('Submit')),
-              )
-            ],
+              ],
+            ),
           ),
+        ));
+  }
+
+  Future<dynamic> chooseLocationDialog() {
+    return Get.defaultDialog(
+        title: 'Select your location',
+        titlePadding: EdgeInsets.only(top: Insets.med),
+        titleStyle: TextStyles.h6.copyWith(color: Colors.blue),
+        radius: 15,
+        content: Column(
+          children: [
+            SizedBox(
+              height: Get.height * 0.13,
+              width: Get.width * 0.6,
+              child: controller.allMarkers.isEmpty
+                  ? Center(
+                      child: Text(
+                      'Please insert the location first',
+                      style: TextStyles.h6,
+                      textAlign: TextAlign.center,
+                    ))
+                  : ListView.builder(
+                      itemBuilder: (context, i) {
+                        return InkWell(
+                          onTap: () {
+                            controller.selectedLocation.value =
+                                controller.allMarkers[i].infoWindow.title!;
+                            controller.selectedIndexLocation.value = i;
+                            Get.back();
+                          },
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                                vertical: 2.h, horizontal: Insets.xs),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(1),
+                                  border: Border.all(color: Colors.blue[100]!)),
+                              child: Center(
+                                  child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: Insets.xs, vertical: Insets.xs),
+                                child: Text(
+                                    controller.allMarkers[i].infoWindow.title!,
+                                    style: TextStyles.textXs
+                                        .copyWith(color: Colors.blue)),
+                              )),
+                            ),
+                          ),
+                        );
+                      },
+                      shrinkWrap: true,
+                      itemCount: controller.allMarkers.length,
+                    ),
+            ),
+          ],
         ));
   }
 }

@@ -1,22 +1,19 @@
 import 'dart:convert';
 
-class Attendance {
-  Attendance({
+class UserAttendance {
+  UserAttendance({
     required this.name,
     required this.longitude,
     required this.latitude,
-    // required this.attendanceLocation,
-    // required this.id,
+
     required this.nameLocation,
     required this.longitudeLocation,
     required this.latitudeLocation,
   });
 
-  // final int id;
   final String name;
   final double longitude;
   final double latitude;
-  // final Location attendanceLocation;
   final String nameLocation;
   final double longitudeLocation;
   final double latitudeLocation;
@@ -25,19 +22,17 @@ class Attendance {
 
   Map<String, dynamic> toMap() {
     final result = <String, dynamic>{};
-  
     result.addAll({'name': name});
     result.addAll({'longitude': longitude});
     result.addAll({'latitude': latitude});
     result.addAll({'nameLocation': nameLocation});
     result.addAll({'longitudeLocation': longitudeLocation});
     result.addAll({'latitudeLocation': latitudeLocation});
-  
     return result;
   }
 
-  factory Attendance.fromMap(Map<String, dynamic> map) {
-    return Attendance(
+  factory UserAttendance.fromMap(Map<String, dynamic> map) {
+    return UserAttendance(
       name: map['name'] ?? '',
       longitude: map['longitude']?.toDouble() ?? 0.0,
       latitude: map['latitude']?.toDouble() ?? 0.0,
@@ -49,6 +44,6 @@ class Attendance {
 
   String toJson() => json.encode(toMap());
 
-  factory Attendance.fromJson(String source) =>
-      Attendance.fromMap(json.decode(source));
+  factory UserAttendance.fromJson(String source) =>
+      UserAttendance.fromMap(json.decode(source));
 }

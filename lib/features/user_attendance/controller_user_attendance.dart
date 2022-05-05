@@ -5,62 +5,72 @@ import 'package:flutter/cupertino.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:mobile_attendance/features/attendance_location/controller_attendance_location.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:sqflite/sqflite.dart';
 
-import '../repository/database_user_attendance.dart';
-import 'model_attendance.dart';
-import '../attendance_location/model_location.dart';
+import '../../repository/database_user_attendance.dart';
+import 'model_user_attendance.dart';
 
-class ControllerAttendance extends GetxController {
-  RxList<Attendance> locationAttendance = <Attendance>[].obs;
-  final database = DatabaseSqflite().openDB();
-  final attendanceDatabase = DatabaseSqflite().openAttendanceLocationDB();
+class ControllerUserAttendance extends GetxController {
+  final userAttendancedatabase =
+      UserAttendanceDatabaseSqflite().openUserAttendanceDB();
+  final name = TextEditingController();
+  var attendanceLocation = Get.find<ControllerAttendanceLocation>();
+
+  RxList<UserAttendance> userAttendance = <UserAttendance>[].obs;
+  RxList<Marker> allMarkers =
+      Get.find<ControllerAttendanceLocation>().allMarkers;
+  RxList<double> distance = <double>[].obs;
 
   RxString selectedLocation = ''.obs;
+
   RxInt selectedIndexLocation = 0.obs;
+
   RxDouble currentLocationLongitude = 0.00.obs;
   RxDouble currentLocationLatitude = 0.00.obs;
-  RxList<double> distance = <double>[].obs;
-  RxBool loading = false.obs;
 
-  final name = TextEditingController();
+  RxBool loading = false.obs;
 
   @override
   onInit() async {
     super.onInit();
-    DatabaseSqflite().openDB();
-    DatabaseSqflite().openAttendanceLocationDB();
-    getAttendancelocations();
     locations();
     getPermission();
   }
 
-  insertLocation({required Attendance location}) async {
+  void clearForm() {
+    name.clear();
+    currentLocationLatitude.value = 0.00;
+    currentLocationLongitude.value = 0.00;
+    selectedLocation.value = '';
+    selectedIndexLocation.value = 0;
+  }
+
+  Future<void> insertLocation({required UserAttendance location}) async {
     try {
       loading(true);
-      final Database db = await database;
+      final Database db = await userAttendancedatabase;
       await db.insert(
         'locations',
         location.toMap(),
       );
+      await locations();
       update();
-      locations();
       loading(false);
     } catch (e) {
       log(e.toString());
     }
   }
 
-  locations() async {
+  Future<void> locations() async {
     try {
       loading(true);
-      final Database db = await database;
+      final Database db = await userAttendancedatabase;
       final List<Map<String, dynamic>> maps = await db.query('locations');
-      locationAttendance(RxList<Attendance>.generate(
+      userAttendance(RxList<UserAttendance>.generate(
           maps.length,
-          (i) => Attendance(
-                // id: maps[i]['id'],
+          (i) => UserAttendance(
                 name: maps[i]['name'],
                 longitude: maps[i]['longitude'],
                 latitude: maps[i]['latitude'],
@@ -76,15 +86,15 @@ class ControllerAttendance extends GetxController {
                 maps[i]['latitudeLocation'],
                 maps[i]['longitudeLocation'],
               )).toList());
-      loading(false);
       update();
+      loading(false);
     } catch (e) {
       log(e.toString());
     }
   }
 
-  Future<void> updateLocation(Attendance location) async {
-    final db = await database;
+  Future<void> updateLocation(UserAttendance location) async {
+    final db = await userAttendancedatabase;
     await db.update(
       'locations',
       location.toMap(),
@@ -94,8 +104,7 @@ class ControllerAttendance extends GetxController {
   }
 
   Future<void> deleteLocation(String name) async {
-    final db = await database;
-
+    final db = await userAttendancedatabase;
     await db.delete(
       'locations',
       where: "name = ?",
@@ -103,7 +112,7 @@ class ControllerAttendance extends GetxController {
     );
   }
 
-  void manipulateDatabase(Attendance locationObject) async {
+  Future<void> manipulateDatabase(UserAttendance locationObject) async {
     await insertLocation(location: locationObject);
   }
 
@@ -143,7 +152,7 @@ class ControllerAttendance extends GetxController {
     return true;
   }
 
-  getPermission() async {
+  Future<void> getPermission() async {
     if (await Permission.storage.request().isGranted) {
     } else {
       Map<Permission, PermissionStatus> statuses = await [
@@ -151,92 +160,5 @@ class ControllerAttendance extends GetxController {
       ].request();
       log(statuses[Permission.location].toString());
     }
-  }
-
-  //Google Maps
-  Rx<Completer> mapsController = Completer().obs;
-  RxList<Marker> allMarkers = <Marker>[].obs;
-  RxList<String> markerName = <String>[].obs;
-  final locationName = TextEditingController();
-
-  @override
-  void onClose() {
-    name.clear();
-    locationName.clear();
-    super.onClose();
-  }
-
-  final Rx<CameraPosition> kGooglePlex = const CameraPosition(
-    target: LatLng(-6.926974, 107.7172905),
-    zoom: 14.4746,
-  ).obs;
-
-  final Rx<CameraPosition> kLake = const CameraPosition(
-          bearing: 192.8334901395799,
-          target: LatLng(-6.9288032, 107.713645),
-          zoom: 19.151926040649414)
-      .obs;
-
-  insertAttendanceLocation({required Location location}) async {
-    try {
-      loading(true);
-      final Database db = await attendanceDatabase;
-      await db.insert(
-        'attendance_locations',
-        location.toMap(),
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-      update();
-      getAttendancelocations();
-      loading(false);
-    } catch (e) {
-      log(e.toString());
-    }
-  }
-
-  getAttendancelocations() async {
-    try {
-      loading(true);
-      final Database db = await attendanceDatabase;
-      final List<Map<String, dynamic>> maps =
-          await db.query('attendance_locations');
-      allMarkers(RxList<Marker>.generate(
-              maps.length,
-              (i) => Marker(
-                  markerId: MarkerId('${maps[i]['id']}'),
-                  position: LatLng(maps[i]['latitude'], maps[i]['longitude']),
-                  infoWindow: InfoWindow(title: maps[i]['nameLocation'])))
-          .toList());
-      markerName(RxList<String>.generate(allMarkers.length,
-          (index) => allMarkers[index].infoWindow.title!)).toList();
-      loading(false);
-      update();
-    } catch (e) {
-      log(e.toString());
-    }
-  }
-
-  Future<void> updateAttendanceLocation(Attendance location) async {
-    final db = await attendanceDatabase;
-    await db.update(
-      'attendance_locations',
-      location.toMap(),
-      where: "name = ?",
-      whereArgs: [location.name],
-    );
-  }
-
-  Future<void> deleteAttendanceLocation(String name) async {
-    final db = await attendanceDatabase;
-
-    await db.delete(
-      'attendance_locations',
-      where: "nameLocation = ?",
-      whereArgs: [name],
-    );
-  }
-
-  void manipulateAttendanceLocationDatabase(Attendance locationObject) async {
-    await insertLocation(location: locationObject);
   }
 }
